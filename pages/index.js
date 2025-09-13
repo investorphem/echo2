@@ -790,7 +790,14 @@ This counter-narrative is now part of your collection!`);
       )}
       
       {activeView === 'premium' && (
-        <PremiumView userTier={userTier} setUserTier={setUserTier} walletConnected={walletConnected} />
+        <PremiumView 
+          userTier={userTier} 
+          setUserTier={setUserTier} 
+          walletConnected={walletConnected}
+          walletAddress={walletAddress}
+          usdcBalance={usdcBalance}
+          checkUSDCBalance={checkUSDCBalance}
+        />
       )}
       
       {activeView === 'faq' && (
@@ -801,7 +808,7 @@ This counter-narrative is now part of your collection!`);
 }
 
 // Premium subscription component
-const PremiumView = ({ userTier, setUserTier, walletConnected }) => {
+const PremiumView = ({ userTier, setUserTier, walletConnected, walletAddress, usdcBalance, checkUSDCBalance }) => {
   const [selectedTier, setSelectedTier] = useState('premium');
   const [paymentStatus, setPaymentStatus] = useState('none'); // 'none', 'pending', 'success'
 
