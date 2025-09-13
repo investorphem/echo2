@@ -9,7 +9,7 @@ const publicClient = createPublicClient({
 
 // USDC contract on Base
 const USDC_CONTRACT = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
-const SUBSCRIPTION_WALLET = '0xEchoEchoSubscriptions...'; // Your subscription receiving wallet
+const SUBSCRIPTION_WALLET = '0x4f9B9C40345258684cfe23F02FDb2B88F1d2eA62'; // Your subscription receiving wallet
 
 // In-memory user database (in production, use real database)
 const users = new Map();

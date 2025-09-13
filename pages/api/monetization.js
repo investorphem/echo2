@@ -143,7 +143,7 @@ export default async function handler(req, res) {
         success: true,
         subscription,
         usdc_amount: pricing[tier],
-        payment_address: '0xEchoEchoUSDCPayments...', // Your USDC payment address on Base
+        payment_address: '0x4f9B9C40345258684cfe23F02FDb2B88F1d2eA62', // Your USDC payment address on Base
         message: `💰 Send ${pricing[tier]} USDC to complete your ${tier} subscription!`,
         instructions: `Transfer ${pricing[tier]} USDC on Base network to the payment address to activate your ${tier} subscription.`
       });

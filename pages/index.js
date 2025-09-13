@@ -856,7 +856,7 @@ const PremiumView = ({ userTier, setUserTier, walletConnected, walletAddress, us
 
         // USDC transfer transaction
         const usdcContract = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
-        const subscriptionWallet = '0xEchoEchoSubscriptions...';
+        const subscriptionWallet = '0x4f9B9C40345258684cfe23F02FDb2B88F1d2eA62';
         
         // Create USDC transfer transaction
         const transferData = `0xa9059cbb000000000000000000000000${subscriptionWallet.slice(2)}${'0'.repeat(64 - (amount * 1000000).toString(16).length)}${(amount * 1000000).toString(16)}`;
