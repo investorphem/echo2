@@ -8,7 +8,8 @@ export default function Home() {
   const [counterNarratives, setCounterNarratives] = useState([]);
   const [walletConnected, setWalletConnected] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeView, setActiveView] = useState('trends'); // 'trends', 'echoes', 'topic'
+  const [activeView, setActiveView] = useState('trends'); // 'trends', 'echoes', 'topic', 'premium', 'earnings', 'faq'
+  const [userTier, setUserTier] = useState('free'); // 'free', 'premium', 'pro'
   const [userEchoes, setUserEchoes] = useState(null);
 
   useEffect(() => {
@@ -349,14 +350,40 @@ This counter-narrative is now part of your collection!`);
           </p>
         </div>
         
-        <div style={{ 
-          background: walletConnected ? '#059669' : '#374151',
-          color: 'white',
-          padding: '6px 12px',
-          borderRadius: 20,
-          fontSize: 12
-        }}>
-          {walletConnected ? '🟢 Connected' : '🔴 Not Connected'}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div style={{
+            background: userTier === 'free' ? '#374151' : userTier === 'premium' ? '#7c3aed' : '#fbbf24',
+            color: 'white',
+            padding: '6px 12px',
+            borderRadius: 20,
+            fontSize: 12,
+            fontWeight: '600'
+          }}>
+            {userTier === 'free' ? '🆓 Free' : userTier === 'premium' ? '💎 Premium' : '👑 Pro'}
+          </div>
+          <button
+            onClick={() => setActiveView('premium')}
+            style={{
+              background: '#3b82f6',
+              color: 'white',
+              border: 'none',
+              padding: '6px 12px',
+              borderRadius: 20,
+              fontSize: 12,
+              cursor: 'pointer'
+            }}
+          >
+            💰 Upgrade
+          </button>
+          <div style={{ 
+            background: walletConnected ? '#059669' : '#374151',
+            color: 'white',
+            padding: '6px 12px',
+            borderRadius: 20,
+            fontSize: 12
+          }}>
+            {walletConnected ? '🟢 Base' : '🔴 Connect'}
+          </div>
         </div>
       </div>
       
@@ -402,7 +429,7 @@ This counter-narrative is now part of your collection!`);
         padding: 4,
         marginBottom: 20
       }}>
-        {['trends', 'echoes'].map(view => (
+        {['trends', 'echoes', 'faq'].map(view => (
           <button
             key={view}
             onClick={() => setActiveView(view)}
@@ -418,7 +445,7 @@ This counter-narrative is now part of your collection!`);
               textTransform: 'capitalize'
             }}
           >
-            {view === 'trends' ? '🔥 Trends' : '📜 My Echoes'}
+            {view === 'trends' ? '🔥 Trends' : view === 'echoes' ? '📜 My Echoes' : '❓ FAQ'}
           </button>
         ))}
       </div>
@@ -684,6 +711,254 @@ This counter-narrative is now part of your collection!`);
           )}
         </div>
       )}
+      
+      {activeView === 'premium' && (
+        <PremiumView userTier={userTier} setUserTier={setUserTier} walletConnected={walletConnected} />
+      )}
+      
+      {activeView === 'faq' && (
+        <FAQView />
+      )}
     </div>
   );
 }
+
+// Premium subscription component
+const PremiumView = ({ userTier, setUserTier, walletConnected }) => {
+  const [selectedTier, setSelectedTier] = useState('premium');
+  const [paymentStatus, setPaymentStatus] = useState('none'); // 'none', 'pending', 'success'
+
+  const handleUSDCPayment = async (tier) => {
+    if (!walletConnected) {
+      alert('Please connect your Base wallet first!');
+      return;
+    }
+
+    const pricing = { premium: 7, pro: 25 };
+    const amount = pricing[tier];
+
+    try {
+      // Get payment info
+      const paymentResp = await fetch('/api/usdc-payment');
+      const paymentInfo = await paymentResp.json();
+      
+      setPaymentStatus('pending');
+      
+      // Show payment instructions
+      const instructions = `
+🔄 USDC Payment Instructions:
+
+💰 Amount: ${amount} USDC
+📍 Network: Base
+📮 Address: ${paymentInfo.payment_address}
+
+Steps:
+1. Open your Base wallet
+2. Send exactly ${amount} USDC to the address above
+3. Come back and click "Verify Payment" with your transaction hash
+
+⚠️ Make sure you're on Base network!
+      `;
+      
+      alert(instructions);
+      
+    } catch (error) {
+      alert('❌ Error setting up payment: ' + error.message);
+      setPaymentStatus('none');
+    }
+  };
+
+  return (
+    <div>
+      <h2 style={{ marginBottom: 24, textAlign: 'center' }}>💎 EchoEcho Premium Subscriptions</h2>
+      
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+        gap: 24,
+        marginBottom: 32
+      }}>
+        {/* Premium Tier */}
+        <div style={{
+          background: selectedTier === 'premium' ? 'linear-gradient(135deg, #7c3aed, #a855f7)' : '#1f2937',
+          border: selectedTier === 'premium' ? '2px solid #a855f7' : '1px solid #374151',
+          borderRadius: 16,
+          padding: 24,
+          cursor: 'pointer',
+          transform: selectedTier === 'premium' ? 'scale(1.02)' : 'scale(1)',
+          transition: 'all 0.3s ease'
+        }}
+        onClick={() => setSelectedTier('premium')}>
+          <h3 style={{ color: '#a855f7', marginBottom: 12 }}>💎 Echo Breaker</h3>
+          <div style={{ fontSize: 32, fontWeight: 'bold', marginBottom: 8 }}>$7 USDC</div>
+          <div style={{ color: '#9ca3af', marginBottom: 16 }}>per month</div>
+          
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ marginBottom: 8, color: '#10b981' }}>✅ Unlimited echoes</div>
+            <div style={{ marginBottom: 8, color: '#10b981' }}>✅ Cross-platform global echoes</div>
+            <div style={{ marginBottom: 8, color: '#10b981' }}>✅ Premium NFT rarities (rare, epic)</div>
+            <div style={{ marginBottom: 8, color: '#10b981' }}>✅ Advanced AI analysis</div>
+            <div style={{ marginBottom: 8, color: '#10b981' }}>✅ Echo analytics dashboard</div>
+          </div>
+          
+          {userTier === 'premium' ? (
+            <div style={{
+              background: '#10b981',
+              color: 'white',
+              padding: '12px',
+              borderRadius: 8,
+              textAlign: 'center'
+            }}>
+              ✅ Current Plan
+            </div>
+          ) : (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleUSDCPayment('premium');
+              }}
+              style={{
+                width: '100%',
+                background: '#3b82f6',
+                color: 'white',
+                border: 'none',
+                padding: '12px',
+                borderRadius: 8,
+                cursor: 'pointer',
+                fontSize: 16,
+                fontWeight: '600'
+              }}
+            >
+              📱 Pay 7 USDC on Base
+            </button>
+          )}
+        </div>
+
+        {/* Pro Tier */}
+        <div style={{
+          background: selectedTier === 'pro' ? 'linear-gradient(135deg, #fbbf24, #f59e0b)' : '#1f2937',
+          border: selectedTier === 'pro' ? '2px solid #f59e0b' : '1px solid #374151',
+          borderRadius: 16,
+          padding: 24,
+          cursor: 'pointer',
+          transform: selectedTier === 'pro' ? 'scale(1.02)' : 'scale(1)',
+          transition: 'all 0.3s ease'
+        }}
+        onClick={() => setSelectedTier('pro')}>
+          <h3 style={{ color: '#f59e0b', marginBottom: 12 }}>👑 Echo Master</h3>
+          <div style={{ fontSize: 32, fontWeight: 'bold', marginBottom: 8 }}>$25 USDC</div>
+          <div style={{ color: '#9ca3af', marginBottom: 16 }}>per month</div>
+          
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ marginBottom: 8, color: '#10b981' }}>✅ All Premium features</div>
+            <div style={{ marginBottom: 8, color: '#10b981' }}>✅ Legendary NFT access</div>
+            <div style={{ marginBottom: 8, color: '#10b981' }}>✅ API access for developers</div>
+            <div style={{ marginBottom: 8, color: '#10b981' }}>✅ Revenue sharing (15%)</div>
+            <div style={{ marginBottom: 8, color: '#10b981' }}>✅ Priority support</div>
+          </div>
+          
+          {userTier === 'pro' ? (
+            <div style={{
+              background: '#10b981',
+              color: 'white',
+              padding: '12px',
+              borderRadius: 8,
+              textAlign: 'center'
+            }}>
+              ✅ Current Plan
+            </div>
+          ) : (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleUSDCPayment('pro');
+              }}
+              style={{
+                width: '100%',
+                background: '#3b82f6',
+                color: 'white',
+                border: 'none',
+                padding: '12px',
+                borderRadius: 8,
+                cursor: 'pointer',
+                fontSize: 16,
+                fontWeight: '600'
+              }}
+            >
+              📱 Pay 25 USDC on Base
+            </button>
+          )}
+        </div>
+      </div>
+      
+      {paymentStatus === 'pending' && (
+        <div style={{
+          background: '#fbbf24',
+          color: '#92400e',
+          padding: 16,
+          borderRadius: 12,
+          marginBottom: 20,
+          textAlign: 'center'
+        }}>
+          ⏳ Payment pending... Please send USDC and verify your transaction.
+        </div>
+      )}
+      
+      <div style={{
+        background: '#1e40af',
+        color: 'white',
+        padding: 20,
+        borderRadius: 12,
+        marginBottom: 20
+      }}>
+        <h4 style={{ marginBottom: 12 }}>🔗 Why USDC on Base?</h4>
+        <div style={{ marginLeft: 16 }}>
+          <div>⚡ Ultra-low fees (under $0.01)</div>
+          <div>🚀 Fast transactions (2-3 seconds)</div>
+          <div>🔒 Ethereum security</div>
+          <div>🎨 Same network as your NFTs</div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// FAQ component embed
+const FAQView = () => {
+  return (
+    <div>
+      <div style={{ textAlign: 'center', marginBottom: 24 }}>
+        <h2 style={{ fontSize: 28, marginBottom: 12 }}>❓ Frequently Asked Questions</h2>
+        <p style={{ color: '#9ca3af' }}>Everything you need to know about EchoEcho</p>
+      </div>
+      
+      <div style={{
+        background: '#1f2937',
+        border: '1px solid #374151',
+        borderRadius: 12,
+        padding: 24,
+        textAlign: 'center'
+      }}>
+        <h3 style={{ marginBottom: 16 }}>📚 Complete FAQ Available</h3>
+        <p style={{ marginBottom: 20, color: '#d1d5db' }}>
+          Get detailed answers about subscriptions, earning potential, NFTs, and more.
+        </p>
+        <button
+          onClick={() => window.open('/faq', '_blank')}
+          style={{
+            background: 'linear-gradient(45deg, #3b82f6, #8b5cf6)',
+            color: 'white',
+            border: 'none',
+            padding: '12px 24px',
+            borderRadius: 25,
+            fontSize: 16,
+            fontWeight: '600',
+            cursor: 'pointer'
+          }}
+        >
+          🌟 Open Full FAQ
+        </button>
+      </div>
+    </div>
+  );
+};
