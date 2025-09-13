@@ -1,6 +1,15 @@
 // User subscription management based on wallet address
 import { createPublicClient, http, formatUnits, parseUnits } from 'viem';
 import { base } from 'viem/chains';
+import { 
+  getUser, 
+  createUser, 
+  updateUserTier, 
+  createSubscription,
+  getUserSubscription,
+  reconcileUserStatus,
+  recordPayment
+} from '../../lib/storage.js';
 
 const publicClient = createPublicClient({
   chain: base,
@@ -10,9 +19,6 @@ const publicClient = createPublicClient({
 // USDC contract on Base
 const USDC_CONTRACT = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 const SUBSCRIPTION_WALLET = '0x4f9B9C40345258684cfe23F02FDb2B88F1d2eA62'; // Your subscription receiving wallet
-
-// In-memory user database (in production, use real database)
-const users = new Map();
 
 export default async function handler(req, res) {
   if (req.method === 'POST') {
@@ -25,18 +31,27 @@ export default async function handler(req, res) {
     const userKey = walletAddress.toLowerCase();
 
     if (action === 'get_subscription') {
-      // Get user subscription status
-      const user = users.get(userKey) || {
-        walletAddress: userKey,
-        tier: 'free',
-        subscription: null,
-        joinedAt: new Date().toISOString()
-      };
+      try {
+        // Reconcile user status and check for expired subscriptions
+        const { tier, subscription } = await reconcileUserStatus(userKey);
+        
+        let user = await getUser(userKey);
+        if (!user) {
+          user = await createUser(userKey, { tier });
+        }
 
-      return res.status(200).json({
-        user,
-        subscription: user.subscription
-      });
+        return res.status(200).json({
+          user: {
+            ...user,
+            tier,
+            walletAddress: userKey
+          },
+          subscription
+        });
+      } catch (error) {
+        console.error('Error getting subscription:', error);
+        return res.status(500).json({ error: 'Failed to get subscription' });
+      }
     }
 
     if (action === 'create_subscription') {
@@ -54,35 +69,30 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Invalid transaction hash' });
       }
 
-      const pricing = { premium: 7, pro: 25 };
-      const user = users.get(userKey) || {
-        walletAddress: userKey,
-        tier: 'free',
-        subscription: null,
-        joinedAt: new Date().toISOString()
-      };
+      try {
+        const pricing = { premium: 7, pro: 25 };
+        
+        // Ensure user exists
+        let user = await getUser(userKey);
+        if (!user) {
+          user = await createUser(userKey);
+        }
 
-      // Create subscription
-      const subscription = {
-        id: `sub_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        tier,
-        status: 'active',
-        amount_usdc: pricing[tier],
-        transaction_hash: transactionHash,
-        created_at: new Date().toISOString(),
-        expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
-        auto_renew: true
-      };
+        // Create subscription with persistence
+        const subscription = await createSubscription(userKey, tier, transactionHash);
+        
+        // Record payment
+        await recordPayment(userKey, transactionHash, pricing[tier], tier);
 
-      user.tier = tier;
-      user.subscription = subscription;
-      users.set(userKey, user);
-
-      return res.status(200).json({
-        success: true,
-        subscription,
-        message: `🎉 Successfully upgraded to ${tier}! Welcome to EchoEcho ${tier}!`
-      });
+        return res.status(200).json({
+          success: true,
+          subscription,
+          message: `🎉 Successfully upgraded to ${tier}! Welcome to EchoEcho ${tier}!`
+        });
+      } catch (error) {
+        console.error('Error creating subscription:', error);
+        return res.status(500).json({ error: 'Failed to create subscription' });
+      }
     }
 
     if (action === 'check_usdc_balance') {
