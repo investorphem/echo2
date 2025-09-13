@@ -7,6 +7,8 @@ export default function Home() {
   const [selectedTopic, setSelectedTopic] = useState(null);
   const [counterNarratives, setCounterNarratives] = useState([]);
   const [walletConnected, setWalletConnected] = useState(false);
+  const [walletAddress, setWalletAddress] = useState(null);
+  const [usdcBalance, setUsdcBalance] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeView, setActiveView] = useState('trends'); // 'trends', 'echoes', 'topic', 'premium', 'earnings', 'faq'
   const [userTier, setUserTier] = useState('free'); // 'free', 'premium', 'pro'
@@ -17,10 +19,69 @@ export default function Home() {
     checkWalletConnection();
   }, [globalMode]);
 
-  const checkWalletConnection = () => {
-    // Check if user has wallet connected via Farcaster
+  const checkWalletConnection = async () => {
+    // Check if user has wallet connected via Farcaster or Web3
     if (typeof window !== 'undefined' && window.ethereum) {
-      setWalletConnected(true);
+      try {
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        if (accounts.length > 0) {
+          setWalletConnected(true);
+          setWalletAddress(accounts[0]);
+          await checkUSDCBalance(accounts[0]);
+          await loadUserSubscription(accounts[0]);
+        }
+      } catch (error) {
+        console.error('Wallet connection check failed:', error);
+      }
+    }
+  };
+
+  const connectWallet = async () => {
+    if (typeof window !== 'undefined' && window.ethereum) {
+      try {
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        if (accounts.length > 0) {
+          setWalletConnected(true);
+          setWalletAddress(accounts[0]);
+          await checkUSDCBalance(accounts[0]);
+          await loadUserSubscription(accounts[0]);
+        }
+      } catch (error) {
+        alert('❌ Failed to connect wallet: ' + error.message);
+      }
+    } else {
+      alert('Please install a Web3 wallet like MetaMask or use Farcaster app!');
+    }
+  };
+
+  const checkUSDCBalance = async (address) => {
+    try {
+      // In production, query USDC contract on Base
+      // For demo, simulate balance check
+      const balance = Math.floor(Math.random() * 100) + 10; // 10-110 USDC
+      setUsdcBalance(balance);
+    } catch (error) {
+      console.error('USDC balance check failed:', error);
+      setUsdcBalance(0);
+    }
+  };
+
+  const loadUserSubscription = async (address) => {
+    try {
+      const resp = await fetch('/api/user-subscription', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ 
+          walletAddress: address,
+          action: 'get_subscription'
+        })
+      });
+      const data = await resp.json();
+      if (data.user) {
+        setUserTier(data.user.tier);
+      }
+    } catch (error) {
+      console.error('Failed to load user subscription:', error);
     }
   };
 
@@ -375,15 +436,31 @@ This counter-narrative is now part of your collection!`);
           >
             💰 Upgrade
           </button>
-          <div style={{ 
-            background: walletConnected ? '#059669' : '#374151',
-            color: 'white',
-            padding: '6px 12px',
-            borderRadius: 20,
-            fontSize: 12
-          }}>
-            {walletConnected ? '🟢 Base' : '🔴 Connect'}
-          </div>
+          <button
+            onClick={walletConnected ? null : connectWallet}
+            style={{ 
+              background: walletConnected ? '#059669' : '#374151',
+              color: 'white',
+              padding: '6px 12px',
+              borderRadius: 20,
+              fontSize: 12,
+              border: 'none',
+              cursor: walletConnected ? 'default' : 'pointer'
+            }}
+          >
+            {walletConnected ? `🟢 ${walletAddress?.slice(0, 6)}...${walletAddress?.slice(-4)}` : '🔴 Connect Wallet'}
+          </button>
+          {walletConnected && (
+            <div style={{
+              background: '#1e40af',
+              color: 'white',
+              padding: '6px 12px',
+              borderRadius: 20,
+              fontSize: 12
+            }}>
+              💰 {usdcBalance} USDC
+            </div>
+          )}
         </div>
       </div>
       
@@ -729,7 +806,7 @@ const PremiumView = ({ userTier, setUserTier, walletConnected }) => {
   const [paymentStatus, setPaymentStatus] = useState('none'); // 'none', 'pending', 'success'
 
   const handleUSDCPayment = async (tier) => {
-    if (!walletConnected) {
+    if (!walletConnected || !walletAddress) {
       alert('Please connect your Base wallet first!');
       return;
     }
@@ -737,34 +814,91 @@ const PremiumView = ({ userTier, setUserTier, walletConnected }) => {
     const pricing = { premium: 7, pro: 25 };
     const amount = pricing[tier];
 
+    // Check if user has enough USDC
+    if (usdcBalance < amount) {
+      alert(`❌ Insufficient USDC Balance!\n\nRequired: ${amount} USDC\nYour Balance: ${usdcBalance} USDC\n\nPlease add more USDC to your wallet on Base network.`);
+      return;
+    }
+
     try {
-      // Get payment info
-      const paymentResp = await fetch('/api/usdc-payment');
-      const paymentInfo = await paymentResp.json();
-      
       setPaymentStatus('pending');
       
-      // Show payment instructions
-      const instructions = `
-🔄 USDC Payment Instructions:
+      // Request USDC transfer via wallet
+      if (typeof window !== 'undefined' && window.ethereum) {
+        // Switch to Base network
+        try {
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0x2105' }], // Base network chain ID
+          });
+        } catch (switchError) {
+          // If Base network is not added, add it
+          if (switchError.code === 4902) {
+            await window.ethereum.request({
+              method: 'wallet_addEthereumChain',
+              params: [{
+                chainId: '0x2105',
+                chainName: 'Base',
+                nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+                rpcUrls: ['https://mainnet.base.org'],
+                blockExplorerUrls: ['https://basescan.org']
+              }]
+            });
+          }
+        }
 
-💰 Amount: ${amount} USDC
-📍 Network: Base
-📮 Address: ${paymentInfo.payment_address}
+        // USDC transfer transaction
+        const usdcContract = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+        const subscriptionWallet = '0xEchoEchoSubscriptions...';
+        
+        // Create USDC transfer transaction
+        const transferData = `0xa9059cbb000000000000000000000000${subscriptionWallet.slice(2)}${'0'.repeat(64 - (amount * 1000000).toString(16).length)}${(amount * 1000000).toString(16)}`;
+        
+        const txHash = await window.ethereum.request({
+          method: 'eth_sendTransaction',
+          params: [{
+            from: walletAddress,
+            to: usdcContract,
+            data: transferData,
+            value: '0x0'
+          }]
+        });
 
-Steps:
-1. Open your Base wallet
-2. Send exactly ${amount} USDC to the address above
-3. Come back and click "Verify Payment" with your transaction hash
+        // Create subscription with transaction hash
+        const subscriptionResp = await fetch('/api/user-subscription', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            walletAddress,
+            action: 'create_subscription',
+            tier,
+            transactionHash: txHash
+          })
+        });
 
-⚠️ Make sure you're on Base network!
-      `;
-      
-      alert(instructions);
+        const result = await subscriptionResp.json();
+        
+        if (result.success) {
+          setUserTier(tier);
+          setPaymentStatus('success');
+          alert(`🎉 ${result.message}\n\n💰 ${amount} USDC paid successfully!\n🔗 Transaction: ${txHash.slice(0, 10)}...`);
+          
+          // Refresh USDC balance
+          await checkUSDCBalance(walletAddress);
+        } else {
+          throw new Error(result.error || 'Subscription creation failed');
+        }
+      }
       
     } catch (error) {
-      alert('❌ Error setting up payment: ' + error.message);
+      console.error('Payment error:', error);
       setPaymentStatus('none');
+      
+      if (error.code === 4001) {
+        alert('❌ Transaction cancelled by user');
+      } else {
+        alert('❌ Payment failed: ' + error.message);
+      }
     }
   };
 
