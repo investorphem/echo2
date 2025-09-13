@@ -11,6 +11,10 @@
     "next": "14.x",
     "react": "18.x",
     "react-dom": "18.x",
-    "node-fetch": "^3.3.2"
+    "node-fetch": "^3.3.2",
+    "openai": "^4.20.1",
+    "twitter-api-v2": "^1.15.0",
+    "viem": "^1.19.0",
+    "wagmi": "^1.4.0"
   }
 }

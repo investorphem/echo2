@@ -20,7 +20,8 @@ export default async function handler(req, res) {
       }),
     });
     const j = await r.json();
-    res.status(200).json(j);
+    // Ensure we return the format the UI expects
+    res.status(200).json({ ...j, ok: true });
   } catch (err) {
     res.status(500).json({ error: String(err) });
   }
