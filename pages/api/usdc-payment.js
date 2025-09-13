@@ -8,7 +8,7 @@ const publicClient = createPublicClient({
 
 // USDC contract on Base: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
 const USDC_CONTRACT = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
-const PAYMENT_ADDRESS = '0xEchoEchoUSDCPayments...'; // Your payment receiving address
+const PAYMENT_ADDRESS = '0x4f9B9C40345258684cfe23F02FDb2B88F1d2eA62'; // Your payment receiving address
 
 export default async function handler(req, res) {
   if (req.method === 'POST') {
