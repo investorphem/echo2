@@ -923,8 +923,48 @@ Steps:
   );
 };
 
-// FAQ component embed
+// FAQ component with inline content
 const FAQView = () => {
+  const [openSections, setOpenSections] = useState({});
+
+  const toggleSection = (index) => {
+    setOpenSections(prev => ({
+      ...prev,
+      [index]: !prev[index]
+    }));
+  };
+
+  const faqData = [
+    {
+      question: "🌟 What is EchoEcho?",
+      answer: "EchoEcho is an AI-powered Farcaster miniapp that breaks echo chambers by discovering counter-narratives from multiple platforms (Farcaster, X, News). When you discover valuable counter-narratives, you earn Insight Token NFTs on Base blockchain!"
+    },
+    {
+      question: "💰 How do I earn money as a user?",
+      answer: "Multiple ways to earn: $0.01 per echo, NFT trading on OpenSea ($2-200+), rarity bonuses, referral income (10%), viral bonuses, and Pro revenue sharing (15%). Estimated earnings: Active user $10-50/month, Engaged user $50-200/month, Power user $200-1000+/month."
+    },
+    {
+      question: "🔄 What are the subscription tiers?",
+      answer: "🆓 FREE ($0): 5 echoes/day, basic features, common NFTs only. 💎 PREMIUM ($7 USDC): Unlimited echoes, cross-platform, rare/epic NFTs, advanced AI. 👑 PRO ($25 USDC): All premium + legendary NFTs, API access, revenue sharing."
+    },
+    {
+      question: "💳 How do USDC payments work?",
+      answer: "Connect your Base wallet, click upgrade tier, confirm USDC transaction automatically. Fast (2-3 seconds), cheap (under $0.01), secure. No manual sending required!"
+    },
+    {
+      question: "🎨 What are Insight Token NFTs?",
+      answer: "NFTs earned for discovering counter-narratives. Rarities: Common ($2-5), Rare ($8-15), Epic ($20-40), Legendary ($50-200+). Trade on OpenSea, proof of diverse thinking, collector status."
+    },
+    {
+      question: "🔓 What premium features do I get?",
+      answer: "Premium: Cross-platform echoes (X + News), unlimited usage, advanced AI, premium NFTs, analytics. Pro: Everything + legendary NFTs, API access, revenue sharing, priority support."
+    },
+    {
+      question: "❓ How do I get started?",
+      answer: "1️⃣ Connect your Base wallet, 2️⃣ Start exploring with 5 free echoes daily, 3️⃣ Upgrade with USDC for unlimited power. Focus on quality counter-narratives for better NFT rarities!"
+    }
+  ];
+
   return (
     <div>
       <div style={{ textAlign: 'center', marginBottom: 24 }}>
@@ -932,32 +972,45 @@ const FAQView = () => {
         <p style={{ color: '#9ca3af' }}>Everything you need to know about EchoEcho</p>
       </div>
       
-      <div style={{
-        background: '#1f2937',
-        border: '1px solid #374151',
-        borderRadius: 12,
-        padding: 24,
-        textAlign: 'center'
-      }}>
-        <h3 style={{ marginBottom: 16 }}>📚 Complete FAQ Available</h3>
-        <p style={{ marginBottom: 20, color: '#d1d5db' }}>
-          Get detailed answers about subscriptions, earning potential, NFTs, and more.
-        </p>
-        <button
-          onClick={() => window.open('/faq', '_blank')}
-          style={{
-            background: 'linear-gradient(45deg, #3b82f6, #8b5cf6)',
-            color: 'white',
-            border: 'none',
-            padding: '12px 24px',
-            borderRadius: 25,
-            fontSize: 16,
-            fontWeight: '600',
-            cursor: 'pointer'
-          }}
-        >
-          🌟 Open Full FAQ
-        </button>
+      <div>
+        {faqData.map((faq, index) => (
+          <div key={index} style={{
+            border: '1px solid #374151',
+            borderRadius: '8px',
+            marginBottom: '12px',
+            backgroundColor: '#1f2937'
+          }}>
+            <button
+              onClick={() => toggleSection(index)}
+              style={{
+                width: '100%',
+                padding: '16px',
+                textAlign: 'left',
+                background: 'none',
+                border: 'none',
+                color: 'white',
+                fontSize: '16px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}
+            >
+              {faq.question}
+              <span style={{ fontSize: '20px' }}>{openSections[index] ? '−' : '+'}</span>
+            </button>
+            {openSections[index] && (
+              <div style={{
+                padding: '0 16px 16px',
+                color: '#d1d5db',
+                lineHeight: '1.6'
+              }}>
+                {faq.answer}
+              </div>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );
