@@ -6,8 +6,12 @@ import {
   reconcileUserStatus
 } from '../../../lib/storage.js';
 
-// Secret token for cron endpoint protection
-const CRON_SECRET = process.env.CRON_SECRET || 'echo_cron_secret_2024';
+// Secret token for cron endpoint protection - MUST be set in environment
+const CRON_SECRET = process.env.CRON_SECRET;
+
+if (!CRON_SECRET) {
+  throw new Error('CRON_SECRET environment variable must be set for security');
+}
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -62,12 +66,13 @@ export default async function handler(req, res) {
       results.errors.push(`1-day reminders error: ${error.message}`);
     }
 
-    // Process expired subscriptions (downgrade)
+    // Process expired subscriptions (downgrade) - check ALL past-due subscriptions
     try {
-      const expiredToday = await getExpiringSubscriptions(0);
+      const { getAllActiveSubscriptions } = await import('../../../lib/storage.js');
+      const allActiveSubscriptions = await getAllActiveSubscriptions();
       const now = new Date();
       
-      for (const subscription of expiredToday) {
+      for (const subscription of allActiveSubscriptions) {
         const expiryDate = new Date(subscription.expires_at);
         
         if (now > expiryDate && subscription.status === 'active') {

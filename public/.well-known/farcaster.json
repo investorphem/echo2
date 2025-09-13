@@ -1,0 +1,43 @@
+{
+  "name": "EchoEcho",
+  "icon": "https://echoecho.app/icon-192.png",
+  "homeUrl": "https://echoecho.app/",
+  "iconUrl": "https://echoecho.app/icon-192.png",
+  "description": "AI-powered echo chamber breaker that discovers counter-narratives from multiple platforms",
+  "version": "1.0.0",
+  "author": {
+    "name": "EchoEcho Team",
+    "url": "/"
+  },
+  "manifest": {
+    "short_name": "EchoEcho",
+    "name": "EchoEcho - AI Echo Chamber Breaker",
+    "icons": [
+      {
+        "src": "/icon-192.png",
+        "sizes": "192x192",
+        "type": "image/png"
+      }
+    ],
+    "start_url": "/",
+    "display": "standalone",
+    "theme_color": "#1e40af",
+    "background_color": "#111827"
+  },
+  "features": [
+    "ai_analysis",
+    "cross_platform_integration", 
+    "nft_minting",
+    "usdc_payments",
+    "subscription_management"
+  ],
+  "supportedNetworks": [
+    "base"
+  ],
+  "monetization": {
+    "model": "freemium",
+    "currency": "USDC",
+    "network": "base",
+    "subscription_tiers": ["premium", "pro"]
+  }
+}

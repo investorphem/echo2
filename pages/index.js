@@ -13,6 +13,8 @@ export default function Home() {
   const [activeView, setActiveView] = useState('trends'); // 'trends', 'echoes', 'topic', 'premium', 'earnings', 'faq'
   const [userTier, setUserTier] = useState('free'); // 'free', 'premium', 'pro'
   const [userEchoes, setUserEchoes] = useState(null);
+  const [subscription, setSubscription] = useState(null);
+  const [reminderDismissed, setReminderDismissed] = useState(false);
 
   useEffect(() => {
     loadTrends();
@@ -79,6 +81,7 @@ export default function Home() {
       const data = await resp.json();
       if (data.user) {
         setUserTier(data.user.tier);
+        setSubscription(data.subscription);
       }
     } catch (error) {
       console.error('Failed to load user subscription:', error);
@@ -463,6 +466,69 @@ This counter-narrative is now part of your collection!`);
           )}
         </div>
       </div>
+      
+      {/* Subscription Reminder Banner */}
+      {subscription && !reminderDismissed && (() => {
+        const now = new Date();
+        const expiryDate = new Date(subscription.expires_at);
+        const daysUntilExpiry = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+        
+        if (daysUntilExpiry <= 3 && daysUntilExpiry > 0) {
+          return (
+            <div style={{
+              background: daysUntilExpiry <= 1 ? '#dc2626' : '#f59e0b',
+              color: 'white',
+              padding: '12px 16px',
+              borderRadius: 8,
+              marginBottom: 16,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              <div>
+                <div style={{ fontWeight: 'bold', marginBottom: 4 }}>
+                  {daysUntilExpiry === 1 ? '⚠️ Last Day!' : `📅 ${daysUntilExpiry} Days Left`}
+                </div>
+                <div style={{ fontSize: 14 }}>
+                  Your {subscription.tier} subscription expires {daysUntilExpiry === 1 ? 'tomorrow' : `in ${daysUntilExpiry} days`}. 
+                  Renew now to keep premium features!
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  onClick={() => setActiveView('premium')}
+                  style={{
+                    background: 'rgba(255,255,255,0.2)',
+                    color: 'white',
+                    border: '1px solid rgba(255,255,255,0.3)',
+                    padding: '6px 12px',
+                    borderRadius: 6,
+                    fontSize: 12,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Renew
+                </button>
+                <button
+                  onClick={() => setReminderDismissed(true)}
+                  style={{
+                    background: 'transparent',
+                    color: 'white',
+                    border: 'none',
+                    padding: '6px 8px',
+                    borderRadius: 6,
+                    fontSize: 16,
+                    cursor: 'pointer'
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          );
+        }
+        return null;
+      })()}
       
       {/* Search and Toggle */}
       <div style={{ marginBottom: 20 }}>
@@ -887,11 +953,13 @@ const PremiumView = ({ userTier, setUserTier, walletConnected, walletAddress, us
         
         if (result.success) {
           setUserTier(tier);
+          setSubscription(result.subscription);
           setPaymentStatus('success');
           alert(`🎉 ${result.message}\n\n💰 ${amount} USDC paid successfully!\n🔗 Transaction: ${txHash.slice(0, 10)}...`);
           
-          // Refresh USDC balance
+          // Refresh USDC balance and subscription data
           await checkUSDCBalance(walletAddress);
+          await loadUserSubscription(walletAddress);
         } else {
           throw new Error(result.error || 'Subscription creation failed');
         }
