@@ -61,7 +61,12 @@ export default async function handler(req, res) {
       revenue_streams: {
         subscriptions: {
           monthly_recurring: true,
-          tiers: ['premium', 'pro']
+          tiers: ['premium', 'pro'],
+          payment_method: 'usdc_base',
+          usdc_pricing: {
+            premium: 7,
+            pro: 25
+          }
         },
         nft_minting: {
           base_fee: 0.001, // ETH
@@ -112,21 +117,35 @@ export default async function handler(req, res) {
     const { action, tier, userAddress } = req.body;
 
     if (action === 'create_subscription') {
-      // In production, integrate with Stripe
+      // USDC subscription on Base blockchain
+      const pricing = {
+        premium: 7, // $7 USDC per month
+        pro: 25    // $25 USDC per month
+      };
+      
+      if (!pricing[tier]) {
+        return res.status(400).json({ error: 'Invalid subscription tier' });
+      }
+      
       const subscription = {
         id: `sub_${Date.now()}`,
         user_address: userAddress,
         tier,
-        status: 'active',
+        status: 'pending_payment',
+        usdc_amount: pricing[tier],
         created_at: new Date().toISOString(),
         next_billing: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        stripe_subscription_id: `stripe_sub_${Math.random().toString(36).substr(2, 9)}`
+        payment_method: 'usdc_base',
+        base_transaction_hash: null
       };
 
       return res.status(200).json({
         success: true,
         subscription,
-        message: `🎉 Upgraded to ${tier}! Your echo chamber breaking powers have increased!`
+        usdc_amount: pricing[tier],
+        payment_address: '0xEchoEchoUSDCPayments...', // Your USDC payment address on Base
+        message: `💰 Send ${pricing[tier]} USDC to complete your ${tier} subscription!`,
+        instructions: `Transfer ${pricing[tier]} USDC on Base network to the payment address to activate your ${tier} subscription.`
       });
     }
 
